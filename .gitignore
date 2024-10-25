@@ -1,0 +1,4 @@
+.env
+.env_encoded
+.envrc
+credentials.json
