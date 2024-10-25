@@ -60,6 +60,16 @@ tasks:
   bucket: "{{ inputs.bucket }}"
   endpoint: "{{ secret('AWS_ENDPOINT_URL') }}"
 ---
+id: s3_compatible_bucket
+namespace: homelab.dev
+tasks:
+- id: create_bucket
+  type: io.kestra.plugin.minio.CreateBucket
+  accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+  secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+  endpoint: "{{ secret('AWS_ENDPOINT_URL_S3') }}"
+  bucket: "kestra-test-bucket"
+---
 id: nextcloudTest
 namespace: homelab.dev
 tasks:
