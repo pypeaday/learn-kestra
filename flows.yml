@@ -59,3 +59,26 @@ tasks:
   region: "main"
   bucket: "{{ inputs.bucket }}"
   endpoint: "{{ secret('AWS_ENDPOINT_URL') }}"
+---
+id: nextcloudTest
+namespace: homelab.dev
+tasks:
+- id: debugging
+  type: io.kestra.plugin.core.log.Log
+  message: My url "{{ secret('NC_URL') }}"
+- id: python
+  type: io.kestra.plugin.scripts.shell.Commands
+  containerImage: python:3.11-slim
+  namespaceFiles:
+    enabled: true
+    include:
+    - nextcloud_test.py
+  beforeCommands:
+  - python -m pip install webdavclient3
+  commands:
+  - env
+  - python nextcloud_test.py
+  env:
+    NC_URL: "{{ secret('NC_URL') }}"
+    NC_PASSWORD: "{{ secret('NC_PASSWORD') }}"
+    NC_USER: "{{ secret('NC_USER') }}"
