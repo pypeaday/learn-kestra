@@ -1,0 +1,45 @@
+id: stars
+namespace: homelab.dev
+inputs:
+- id: repo
+  type: STRING
+  defaults: kestra-io/kestra
+tasks:
+- id: api_query
+  type: io.kestra.plugin.core.http.Request
+  contentType: application/json
+  headers:
+    User-Agent: kestra
+  uri: https://api.github.com/repos/{{inputs.repo}}
+- id: get_stars
+  type: io.kestra.plugin.core.log.Log
+  message: ✨✨✨ Total GitHub stars {{json(outputs.api_query.body).stargazers_count }} ✨✨✨
+- id: foo_python
+  type: io.kestra.core.tasks.scripts.Python
+  args:
+  - data.json
+  requirements:
+  - requests
+  - pip-install-test
+  inputFiles:
+    data.json: |
+      {
+      "status": "OK",
+      "stargazers_count": {{json(outputs.api_query.body).stargazers_count }}
+      }
+    main.py: |
+      from kestra import Kestra
+      import json
+      import requests
+      import sys
+      result = json.loads(open(sys.argv[1]).read())
+      print(f"python script {result['status']}")
+      print(f"python script {result['stargazers_count']}")
+      response = requests.get('http://google.com')
+      print(response.status_code)
+      Kestra.outputs({'status': response.status_code, 'text': response.text})
+    pip.conf: |
+      # some specific pip repository configuration
+- id: see_outputs
+  type: io.kestra.plugin.core.log.Log
+  message: 🚀🚀 {{outputs.foo_python.vars.status}}
