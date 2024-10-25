@@ -43,3 +43,19 @@ tasks:
 - id: see_outputs
   type: io.kestra.plugin.core.log.Log
   message: 🚀🚀 {{outputs.foo_python.vars.status}}
+---
+id: create_bucket_flow
+namespace: homelab.dev
+inputs:
+- id: bucket
+  type: STRING
+  defaults: declarative-orchestration-with-kestra
+  required: true
+tasks:
+- id: create_bucket
+  type: io.kestra.plugin.minio.CreateBucket
+  accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+  secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+  region: "main"
+  bucket: "{{ inputs.bucket }}"
+  endpoint: "{{ secret('AWS_ENDPOINT_URL') }}"
