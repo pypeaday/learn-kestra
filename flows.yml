@@ -77,7 +77,8 @@ tasks:
   type: io.kestra.plugin.core.log.Log
   message: My url "{{ secret('NC_URL') }}"
 - id: python
-  type: io.kestra.plugin.scripts.shell.Commands
+  # type: io.kestra.plugin.scripts.shell.Commands
+  type: io.kestra.plugin.scripts.python.Commands
   containerImage: python:3.11-slim
   namespaceFiles:
     enabled: true
@@ -92,3 +93,45 @@ tasks:
     NC_URL: "{{ secret('NC_URL') }}"
     NC_PASSWORD: "{{ secret('NC_PASSWORD') }}"
     NC_USER: "{{ secret('NC_USER') }}"
+---
+id: openai
+namespace: homelab.dev
+inputs:
+- id: bucket
+  type: STRING
+  defaults: testertest
+  required: true
+tasks:
+- id: call_subflow
+  type: io.kestra.plugin.core.flow.Subflow
+  namespace: homelab.dev
+  flowId: s3_compatible_bucket
+  inputs:
+    bucket: "{{ inputs.bucket }}"
+  wait: true
+  transmitFailed: true
+- id: prompt
+  type: io.kestra.plugin.openai.ChatCompletion
+  apiKey: "{{ secret('OPENAI_API_KEY') }}"
+  model: gpt-4
+  prompt: Explain in one sentence why data engineers build data pipelines
+- id: python
+  type: io.kestra.plugin.scripts.python.Script
+  containerImage: python:slim
+  warningOnStdErr: false
+  outputFiles:
+  - "query.json"
+  script: |
+    import json
+    from pathlib import Path
+    data = {{ outputs.prompt.choices }}
+    Path('./query.json').write_text(json.dumps(data))
+- id: upload
+  type: io.kestra.plugin.minio.Upload
+  bucket: "{{ inputs.bucket }}"
+  from: "{{ outputs.python.outputFiles['query.json'] }}"
+  key: data.json
+  accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+  secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+  endpoint: "{{ secret('AWS_ENDPOINT_URL_S3') }}"
+  region: "main"
